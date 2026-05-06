@@ -1,0 +1,23 @@
+# {{ idea }} — Roadmap
+
+**Last update:** {{ today }}
+
+## Active
+{% for h in active %}- {{ h.id }} {{ h.statement }} → {{ h.status }}
+{% else %}*(none)*
+{% endfor %}
+
+## Concluded (simulated only)
+{% for h in concluded %}- {{ h.id }} {{ h.statement }} → {{ h.outcome }}
+{% else %}*(none)*
+{% endfor %}
+
+## Promoted to real interviews
+{% for h in promoted %}- {{ h.id }} (kit exported {{ h.exported }})
+{% else %}*(none)*
+{% endfor %}
+
+## Next up (from §2 backlog)
+{% for h in next_up %}- {{ h.id }} {{ h.statement }}
+{% else %}*(none)*
+{% endfor %}

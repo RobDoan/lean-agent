@@ -1,0 +1,44 @@
+# Synthesis — {{ hypothesis.id }}
+
+**Hypothesis:** {{ hypothesis.statement }}
+**Date:** {{ today }}
+**Personas:** {{ persona_ids | join(', ') }}
+
+---
+
+## 1. Steel-man objection
+
+> **The strongest reason this hypothesis fails — written as if from someone who tried and failed.**
+
+{{ steelman }}
+
+## 2. Themes across personas
+
+{% for t in themes %}- {{ t }}
+{% endfor %}
+
+## 3. Kill signal
+
+- **Would pay / use:** {{ kill_signal.would_use }}/{{ kill_signal.total }}
+- **Would actively avoid:** {{ kill_signal.would_avoid }}/{{ kill_signal.total }}
+- **Threshold met for kill?** {{ kill_signal.kill_threshold_met }}
+
+## 4. What we're confident about (vs. what only a real human can answer)
+
+**Confident (LLM training-data has prior):**
+{% for c in confident %}- {{ c }}
+{% endfor %}
+
+**Only-real-humans-can-answer:**
+{% for u in unknown %}- {{ u }}
+{% endfor %}
+
+## 5. Recommendation
+
+{{ recommendation }}  *(one of: 🚀 Promote / ✏️ Revise & rerun / 💀 Kill)*
+
+---
+*Run one of:*
+- `lean promote {{ hypothesis.id }}`
+- `lean revise {{ hypothesis.id }} --note "<reason>"`
+- `lean kill {{ hypothesis.id }} --note "<funeral note>"`

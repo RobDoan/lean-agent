@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  // baseUrl + paths are duplicated here (despite this file compiling nothing) because
+  // the shadcn CLI's preflight reads root tsconfig — without these, `shadcn add` fails.
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

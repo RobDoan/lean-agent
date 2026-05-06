@@ -1,0 +1,22 @@
+# Discussion Guide — {{ hypothesis.id }}
+
+**Hypothesis:** {{ hypothesis.statement }}
+**Generated:** {{ today }}
+
+## Interview structure (45 min)
+
+- 5 min: rapport + consent
+- 10 min: context — current behaviour
+- 20 min: probe — does the pain exist, how acute, what they tried
+- 5 min: reaction to a one-sentence solution
+- 5 min: wrap, referrals
+
+## Questions
+
+{% for q in questions %}
+**{{ loop.index }}. {{ q.text }}**
+{% if q.leading_warning is defined and q.leading_warning %}
+> ⚠️ **Possibly leading.** Suggested rephrase: *{{ q.rephrase }}*
+{% endif %}
+
+{% endfor %}

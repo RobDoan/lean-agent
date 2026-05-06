@@ -1,0 +1,16 @@
+# Recruiting Criteria — {{ hypothesis.id }}
+
+Recruit 5–8 people matching:
+
+{% for c in criteria %}- {{ c }}
+{% endfor %}
+
+## Must-have screening questions
+
+{% for q in screeners %}- {{ q }}
+{% endfor %}
+
+## Disqualifiers
+
+{% for d in disqualifiers %}- {{ d }}
+{% endfor %}

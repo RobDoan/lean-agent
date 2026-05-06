@@ -1,0 +1,35 @@
+# Problem Validation Sprint — {{ hypothesis.id }}
+
+**Hypothesis:** {{ hypothesis.statement }}
+**Created:** {{ today }}
+**Personas in panel:** {{ personas | map(attribute='id') | join(', ') }}
+
+---
+
+## 1. Riskiest Assumption
+
+{{ hypothesis.riskiest_assumption }}
+
+## 2. Success / Kill Criteria
+
+- **Success:** {{ hypothesis.success_criteria }}
+- **Kill:** {{ hypothesis.kill_criteria }}
+
+## 3. Discussion Guide
+
+{% for q in discussion_guide -%}
+{{ loop.index }}. {{ q }}
+{% endfor %}
+
+## 4. Simulated Interviews
+
+{% for p in personas -%}
+- [{{ p.id }}](./interviews/{{ p.id }}-{{ today }}.md)
+{% endfor %}
+
+## 5. Synthesis
+
+→ [synthesis.md](./synthesis.md)
+
+---
+*Mode A reminder: simulated personas predict, not validate. Kit export → real humans.*

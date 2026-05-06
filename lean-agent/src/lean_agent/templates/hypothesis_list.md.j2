@@ -1,0 +1,62 @@
+# The Hypothesis Engine
+
+**Idea:** {{ idea }}
+**Project slug:** `{{ slug }}`
+**Owner:** {{ owner }}
+**Last Updated:** {{ today }}
+
+---
+
+## 1. Idea Triage
+
+{% for angle in idea_angles %}- {{ angle }}
+{% endfor %}
+
+---
+
+## 2. Hypothesis Backlog
+
+| Priority | ID | Hypothesis | Impact | Risk | Effort | Score | Expected pain | Expected objection |
+|:---:|:---:|:---|:---:|:---:|:---:|:---:|:---|:---|
+{% for h in hypotheses -%}
+| {{ loop.index }} | {{ h.id }} | {{ h.statement }} | {{ h.impact }} | {{ h.risk }} | {{ h.effort }} | {{ h.score }} | {{ h.expected_pain }} | {{ h.expected_objection }} |
+{% endfor %}
+
+---
+
+## 3. Active & Recent Experiments
+
+*Updated by `lean run R1 H<n>` and the promote/revise/kill commands.*
+
+{% if active_entries -%}
+{% for e in active_entries %}
+### {{ e.id }} — {{ e.statement }}
+
+- **Status:** {{ e.status }}
+- **Decision:** {{ e.decision }}
+- **Key Learning:** {{ e.key_learning }}
+- **Evidence:** {{ e.evidence }}
+
+{% endfor %}
+{% else %}
+*(empty — run `lean run R1 H1` to start)*
+{% endif %}
+
+---
+
+## 4. Learning Library
+
+### ✅ Validated Assumptions
+{% for v in validated %}- {{ v }}
+{% else %}*(empty — only real interviews can validate)*
+{% endfor %}
+
+### ❌ Invalidated Assumptions
+{% for v in invalidated %}- {{ v }}
+{% else %}*(empty)*
+{% endfor %}
+
+### ❓ Inconclusive Tests
+{% for v in inconclusive %}- {{ v }}
+{% else %}*(empty)*
+{% endfor %}

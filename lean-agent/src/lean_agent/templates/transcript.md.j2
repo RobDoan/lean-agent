@@ -1,0 +1,28 @@
+# Interview transcript — {{ persona.name }}
+
+**Persona ID:** {{ persona.id }}
+**Hypothesis:** {{ hypothesis.id }} — {{ hypothesis.statement }}
+**Date:** {{ today }}
+**Mode:** Simulated
+
+---
+
+## Q & A
+
+{% for turn in turns %}
+**Q{{ loop.index }}:** {{ turn.question }}
+
+**A{{ loop.index }}:** {{ turn.answer }}
+{% endfor %}
+
+---
+
+## Confession
+
+*What this persona said that a real human probably wouldn't, and why.*
+
+{{ confession }}
+
+## Confidence
+
+{{ confidence }}/5

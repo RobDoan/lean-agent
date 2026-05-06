@@ -1,0 +1,23 @@
+# {{ idea }}
+
+A Lean Startup Agent project.
+
+**Created:** {{ today }}
+**Slug:** `{{ slug }}`
+**Mode:** A (R0+R1 only, simulated)
+
+## Layout
+
+- [`01-research/00-hypothesis-list.md`](./01-research/00-hypothesis-list.md) — R0
+- [`01-research/H<n>-<slug>/`](./01-research/) — per-hypothesis R1 work
+- [`ROADMAP.md`](./ROADMAP.md) — current state across hypotheses
+
+## Commands
+
+```
+lean run R1 H<n>      # simulate interviews for one hypothesis
+lean promote H<n>     # mark ready-for-real-interviews
+lean revise H<n>      # send back to backlog with a note
+lean kill H<n>        # write funeral note, move to Library
+lean export-kit H<n>  # produce real-interview packet
+```
