@@ -143,3 +143,29 @@ def test_delete_preset_missing(tmp_path: Path):
 
     with pytest.raises(PresetNotFound):
         delete_preset(preset_name="ghost", presets_root=presets_root)
+
+
+# --- iterative refinement (v0.3.1) ---
+
+def test_draft_preset_change_current_content_overrides_disk(tmp_path: Path):
+    """When current_content is provided, LLM receives it instead of the file on disk."""
+    from lean_agent.commands.edit_preset import draft_preset_change
+    from lean_agent.llm import StubLLMClient
+
+    personas_root, presets_root = _make_personas(tmp_path, ["alice", "bob"])
+    (presets_root / "smb-saas.md").write_text("- alice\n")
+
+    custom_content = "- alice\n- bob\n"
+    client = StubLLMClient(streaming_responses=[["- alice\n- bob\n"]])
+
+    list(draft_preset_change(
+        target_name="smb-saas",
+        instruction="keep as is",
+        client=client,
+        personas_root=personas_root,
+        presets_root=presets_root,
+        current_content=custom_content,
+    ))
+
+    sent_msg = client.streaming_calls[0].messages[0]["content"]
+    assert "- bob" in sent_msg  # custom content used (has bob)

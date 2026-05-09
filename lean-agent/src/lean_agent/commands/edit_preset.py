@@ -52,20 +52,24 @@ def draft_preset_change(
     client: LLMClient,
     personas_root: Path,
     presets_root: Path,
+    current_content: str | None = None,
 ) -> Iterator[dict]:
     """Stream tokens from the LLM; yield {kind:"token",text} per chunk and a final {kind:"done",...}.
 
     target_name=None means create-mode (use empty template).
+    current_content override: if provided, used as the baseline instead of disk/template
+    (enables iterative refinement on unsaved drafts).
     """
     available = _available_ids(personas_root)
 
-    if target_name is not None:
-        path = _preset_path(presets_root, target_name)
-        if not path.exists():
-            raise PresetNotFound(target_name)
-        current_content = path.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
-    else:
-        current_content = _read_template()
+    if current_content is None:
+        if target_name is not None:
+            path = _preset_path(presets_root, target_name)
+            if not path.exists():
+                raise PresetNotFound(target_name)
+            current_content = path.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+        else:
+            current_content = _read_template()
 
     sys = build_system_prompt(available_ids=sorted(available))
     user_message = build_user_message(current_content=current_content, instruction=instruction)

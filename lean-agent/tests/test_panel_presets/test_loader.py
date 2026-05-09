@@ -77,3 +77,52 @@ def test_list_presets_excludes_underscore_files(tmp_path: Path):
     names = sorted(p.name for p in paths)
 
     assert names == ["creator.md", "smb-saas.md"]
+
+
+# --- description field (v0.3.1) ---
+
+
+def test_load_preset_parses_description_blockquote(tmp_path: Path):
+    from lean_agent.panel_presets.loader import load_preset
+
+    preset_path = tmp_path / "gig-workers.md"
+    preset_path.write_text("> Low-income gig workers in US\n\n- alice\n- bob\n")
+
+    preset = load_preset(preset_path, available_ids={"alice", "bob"})
+
+    assert preset.description == "Low-income gig workers in US"
+    assert preset.persona_ids == ["alice", "bob"]
+
+
+def test_load_preset_no_description_backwards_compat(tmp_path: Path):
+    from lean_agent.panel_presets.loader import load_preset
+
+    preset_path = tmp_path / "plain.md"
+    preset_path.write_text("- alice\n- bob\n")
+
+    preset = load_preset(preset_path, available_ids={"alice", "bob"})
+
+    assert preset.description is None
+    assert preset.persona_ids == ["alice", "bob"]
+
+
+def test_load_preset_from_str_parses_description():
+    from lean_agent.panel_presets.loader import load_preset_from_str
+
+    text = "> SaaS founders panel\n\n- alice\n- bob\n"
+    preset = load_preset_from_str(text, name="saas", available_ids={"alice", "bob"})
+
+    assert preset.description == "SaaS founders panel"
+    assert preset.persona_ids == ["alice", "bob"]
+
+
+def test_load_preset_multiline_description(tmp_path: Path):
+    from lean_agent.panel_presets.loader import load_preset
+
+    preset_path = tmp_path / "multi.md"
+    preset_path.write_text("> Line one\n> Line two\n\n- alice\n")
+
+    preset = load_preset(preset_path, available_ids={"alice"})
+
+    assert preset.description == "Line one\nLine two"
+    assert preset.persona_ids == ["alice"]

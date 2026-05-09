@@ -50,6 +50,9 @@ export default function EditorPage({ target, mode }: EditorPageProps) {
   const [newId, setNewId] = useState("");
   const newIdValid = SLUG_RE.test(newId);
 
+  // Accept button inline error
+  const [acceptError, setAcceptError] = useState<string | null>(null);
+
   // Commit mutation
   const commit = useMutation({
     mutationFn: async () => {
@@ -66,6 +69,7 @@ export default function EditorPage({ target, mode }: EditorPageProps) {
       return editPreset(targetId!, content);
     },
     onSuccess: async () => {
+      setAcceptError(null);
       const queryKey = target === "persona" ? ["personas"] : ["panel-presets"];
       await queryClient.invalidateQueries({ queryKey });
       if (mode === "edit") {
@@ -101,7 +105,30 @@ export default function EditorPage({ target, mode }: EditorPageProps) {
   };
 
   const sendDisabled = draft.state === "streaming" || commit.isPending;
-  const acceptEnabled = draft.state === "done_ok";
+
+  // Iterative refinement: when in DONE_OK, pass proposedText as currentContent
+  const handleSend = (instruction: string): void => {
+    setAcceptError(null);
+    if (draft.state === "done_ok") {
+      draft.send(instruction, draft.proposedText);
+    } else {
+      draft.send(instruction);
+    }
+  };
+
+  // Accept button: always enabled visually, validates on click
+  const handleAccept = (): void => {
+    if (draft.state !== "done_ok") {
+      setAcceptError("No draft ready to accept. Send a prompt first.");
+      return;
+    }
+    if (mode === "create" && !newIdValid) {
+      setAcceptError("A valid ID is required before accepting. Enter a slug-id above.");
+      return;
+    }
+    setAcceptError(null);
+    commit.mutate();
+  };
 
   // Render
   return (
@@ -139,12 +166,12 @@ export default function EditorPage({ target, mode }: EditorPageProps) {
         )}
       </div>
 
-      <div className="border-t bg-background px-6 py-3">
+      <div className="border-t bg-muted/30 px-6 py-3">
         <div className="grid grid-cols-[1fr_auto_auto] items-end gap-2">
-          <ChatInput onSend={draft.send} disabled={sendDisabled} />
+          <ChatInput onSend={handleSend} disabled={sendDisabled} />
           <button
             type="button"
-            onClick={draft.reset}
+            onClick={() => { setAcceptError(null); draft.reset(); }}
             disabled={draft.state === "idle" || commit.isPending}
             className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
           >
@@ -152,13 +179,18 @@ export default function EditorPage({ target, mode }: EditorPageProps) {
           </button>
           <button
             type="button"
-            onClick={() => commit.mutate()}
-            disabled={!acceptEnabled || commit.isPending || (mode === "create" && !newIdValid)}
+            onClick={handleAccept}
+            disabled={commit.isPending}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
             {commit.isPending ? "Saving…" : "Accept"}
           </button>
         </div>
+        {acceptError && (
+          <p role="alert" aria-live="polite" className="mt-2 text-sm text-destructive">
+            {acceptError}
+          </p>
+        )}
         {commit.isError && (
           <p role="alert" aria-live="polite" className="mt-2 text-sm text-destructive">
             Save failed — {commit.error instanceof ApiClientError ? commit.error.detail : String(commit.error)}

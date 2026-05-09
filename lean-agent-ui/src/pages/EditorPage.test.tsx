@@ -42,7 +42,7 @@ function _renderEdit(target: "persona" | "preset", id: string) {
 
 
 describe("EditorPage edit mode (persona)", () => {
-  it("loads current content + Send/Accept/Reject disabled in IDLE", async () => {
+  it("loads current content; Accept click in IDLE shows error message", async () => {
     vi.spyOn(api, "getPersona").mockResolvedValue({
       id: "alice", name: "Alice", metadata: {},
       backstory: "x", beliefs: "x", biases: "x", how_she_answers: "x",
@@ -53,7 +53,9 @@ describe("EditorPage edit mode (persona)", () => {
 
     // In IDLE, content is shown in single-pane preview
     await waitFor(() => expect(screen.getByText("Alice")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /accept/i })).toBeDisabled();
+    // Accept is always enabled but shows error when no draft is ready
+    await userEvent.click(screen.getByRole("button", { name: /accept/i }));
+    expect(screen.getByText(/no draft ready/i)).toBeInTheDocument();
   });
 
   it("Accept enables only after done.ok=true; PUT called on click; navigates back", async () => {
@@ -88,7 +90,7 @@ describe("EditorPage edit mode (persona)", () => {
     await waitFor(() => expect(editSpy).toHaveBeenCalledWith("alice", PERSONA_ALICE));
   });
 
-  it("Accept stays disabled when done.ok=false", async () => {
+  it("Accept click when done.ok=false shows error message", async () => {
     vi.spyOn(api, "getPersona").mockResolvedValue({
       id: "alice", name: "Alice", metadata: {},
       backstory: "x", beliefs: "x", biases: "x", how_she_answers: "x",
@@ -107,10 +109,12 @@ describe("EditorPage edit mode (persona)", () => {
     await userEvent.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => expect(screen.getByText(/bad/)).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /accept/i })).toBeDisabled();
+    // Accept is not disabled but clicking shows error
+    await userEvent.click(screen.getByRole("button", { name: /accept/i }));
+    expect(screen.getByText(/no draft ready/i)).toBeInTheDocument();
   });
 
-  it("Reject returns to IDLE", async () => {
+  it("Reject returns to IDLE; Accept click after reject shows error", async () => {
     vi.spyOn(api, "getPersona").mockResolvedValue({
       id: "alice", name: "Alice", metadata: {},
       backstory: "x", beliefs: "x", biases: "x", how_she_answers: "x",
@@ -130,7 +134,9 @@ describe("EditorPage edit mode (persona)", () => {
     await waitFor(() => expect(accept).toBeEnabled());
 
     await userEvent.click(screen.getByRole("button", { name: /reject/i }));
-    expect(screen.getByRole("button", { name: /accept/i })).toBeDisabled();
+    // After reject, Accept click shows error (back to IDLE state)
+    await userEvent.click(screen.getByRole("button", { name: /accept/i }));
+    expect(screen.getByText(/no draft ready/i)).toBeInTheDocument();
   });
 
   it("Delete shows modal; cascade-409 disables Confirm and lists presets", async () => {

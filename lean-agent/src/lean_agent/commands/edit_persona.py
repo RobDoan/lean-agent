@@ -61,18 +61,22 @@ def draft_persona_change(
     instruction: str,
     client: LLMClient,
     personas_root: Path,
+    current_content: str | None = None,
 ) -> Iterator[dict]:
     """Stream tokens from the LLM; yield {kind:"token",text} per chunk and a final {kind:"done",...}.
 
     target_id=None means create-mode (use empty template).
+    current_content override: if provided, used as the baseline instead of disk/template
+    (enables iterative refinement on unsaved drafts).
     """
-    if target_id is not None:
-        path = _persona_path(personas_root, target_id)
-        if not path.exists():
-            raise PersonaNotFound(target_id)
-        current_content = path.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
-    else:
-        current_content = _read_template()
+    if current_content is None:
+        if target_id is not None:
+            path = _persona_path(personas_root, target_id)
+            if not path.exists():
+                raise PersonaNotFound(target_id)
+            current_content = path.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+        else:
+            current_content = _read_template()
 
     user_message = build_user_message(
         current_content=current_content, instruction=instruction

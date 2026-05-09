@@ -46,16 +46,20 @@ export function useDraftStream(
 ) {
   const [state, dispatch] = useReducer(reducer, INITIAL);
 
-  const send = (instruction: string): void => {
+  const send = (instruction: string, currentContent?: string): void => {
     // Fire-and-forget: keeps `act(() => send(...))` in tests synchronous so React's
     // act internals do not schedule stray setImmediate callbacks that bleed across tests.
     void (async () => {
       dispatch({ type: "SEND_STARTED" });
       const url = target === "persona" ? "/api/personas/draft" : "/api/panel-presets/draft";
-      const body =
+      const payload: Record<string, unknown> =
         target === "persona"
-          ? JSON.stringify({ target_id: targetId, instruction })
-          : JSON.stringify({ target_name: targetId, instruction });
+          ? { target_id: targetId, instruction }
+          : { target_name: targetId, instruction };
+      if (currentContent !== undefined) {
+        payload.current_content = currentContent;
+      }
+      const body = JSON.stringify(payload);
 
       try {
         const response = await fetch(url, {

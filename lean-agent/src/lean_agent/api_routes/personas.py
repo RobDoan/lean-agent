@@ -64,6 +64,7 @@ def persona_draft(
                 instruction=body.instruction,
                 client=client,
                 personas_root=_personas_root(),
+                current_content=body.current_content,
             ):
                 if event["kind"] == "token":
                     yield sse("token", {"text": event["text"]})

@@ -84,6 +84,7 @@ def preset_draft(
                 client=client,
                 personas_root=_personas_root(),
                 presets_root=_presets_root(),
+                current_content=body.current_content,
             ):
                 if event["kind"] == "token":
                     yield sse("token", {"text": event["text"]})

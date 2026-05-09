@@ -83,8 +83,8 @@ def persona_to_detail_dto(p: Persona, raw_content: str) -> PersonaDetail:
 
 
 def preset_to_summary_dto(p: Preset) -> PresetSummary:
-    return PresetSummary(name=p.name, persona_count=len(p.persona_ids))
+    return PresetSummary(name=p.name, persona_count=len(p.persona_ids), description=p.description)
 
 
 def preset_to_detail_dto(p: Preset, raw_content: str) -> PresetDetail:
-    return PresetDetail(name=p.name, persona_ids=list(p.persona_ids), raw_content=raw_content)
+    return PresetDetail(name=p.name, persona_ids=list(p.persona_ids), raw_content=raw_content, description=p.description)

@@ -131,3 +131,72 @@ describe("useDraftStream", () => {
     );
   });
 });
+
+
+describe("useDraftStream iterative refinement (v0.3.1)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("send with currentContent includes current_content in body", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([{ event: "done", data: { ok: true, content: "refined" } }]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("persona", "alice"));
+    act(() => result.current.send("refine", "prior draft content"));
+
+    await waitFor(() => expect(result.current.state).toBe("done_ok"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/personas/draft",
+      expect.objectContaining({
+        body: JSON.stringify({
+          target_id: "alice",
+          instruction: "refine",
+          current_content: "prior draft content",
+        }),
+      }),
+    );
+  });
+
+  it("send without currentContent does NOT include current_content in body", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([{ event: "done", data: { ok: true, content: "x" } }]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("persona", "alice"));
+    act(() => result.current.send("initial prompt"));
+
+    await waitFor(() => expect(result.current.state).toBe("done_ok"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/personas/draft",
+      expect.objectContaining({
+        body: JSON.stringify({ target_id: "alice", instruction: "initial prompt" }),
+      }),
+    );
+  });
+
+  it("preset send with currentContent includes current_content", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([{ event: "done", data: { ok: true, content: "x" } }]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("preset", "smb-saas"));
+    act(() => result.current.send("add bob", "- alice\n"));
+
+    await waitFor(() => expect(result.current.state).toBe("done_ok"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/panel-presets/draft",
+      expect.objectContaining({
+        body: JSON.stringify({
+          target_name: "smb-saas",
+          instruction: "add bob",
+          current_content: "- alice\n",
+        }),
+      }),
+    );
+  });
+});

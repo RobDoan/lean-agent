@@ -8,7 +8,14 @@ from __future__ import annotations
 
 _SYSTEM_PROMPT_TEMPLATE = """\
 You are editing a panel-preset file for the lean-agent tool. A panel-preset is
-a markdown bullet list of persona ids that compose a named panel.
+a markdown file that optionally starts with a description blockquote, followed
+by a bullet list of persona ids that compose a named panel.
+
+Format:
+  > A one-line description of this panel's purpose and audience.
+
+  - persona-id-1
+  - persona-id-2
 
 Available persona ids (the ONLY ones you may use):
 {ids_block}
@@ -17,10 +24,13 @@ Your job: take the user's current preset and their change instruction, and
 return the new preset in full.
 
 Rules:
-  - Output ONLY the bullet list. No explanation, no preamble, no code fences,
+  - Output ONLY the file content. No explanation, no preamble, no code fences,
     no headings.
-  - Each line is `- <persona-id>` where `<persona-id>` is one of the available
-    ids exactly as shown.
+  - Optionally include a one-line description as a blockquote (`> ...`) before
+    the bullet list. If the current file has a description, preserve or update
+    it. If creating a new preset, include a description.
+  - Each bullet line is `- <persona-id>` where `<persona-id>` is one of the
+    available ids exactly as shown.
   - No duplicates. No personas not in the available list.
   - 1 to 12 personas per preset.
 """

@@ -74,6 +74,7 @@ class PersonaDetail(BaseModel):
 class PersonaDraftRequest(BaseModel):
     target_id: str | None = None
     instruction: str = Field(min_length=1, max_length=2000)
+    current_content: str | None = None
 
 
 class PersonaCreateRequest(BaseModel):
@@ -91,17 +92,20 @@ class PersonaEditRequest(BaseModel):
 class PresetSummary(BaseModel):
     name: str
     persona_count: int
+    description: str | None = None
 
 
 class PresetDetail(BaseModel):
     name: str
     persona_ids: list[str]
     raw_content: str
+    description: str | None = None
 
 
 class PresetDraftRequest(BaseModel):
     target_name: str | None = None
     instruction: str = Field(min_length=1, max_length=2000)
+    current_content: str | None = None
 
 
 class PresetCreateRequest(BaseModel):

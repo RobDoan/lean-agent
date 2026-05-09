@@ -265,3 +265,54 @@ def test_delete_persona_raises_not_found_when_absent(tmp_path: Path):
 
     with pytest.raises(PersonaNotFound):
         delete_persona(persona_id="ghost", personas_root=root, presets_root=presets_root)
+
+
+# --- iterative refinement (v0.3.1) ---
+
+def test_draft_persona_change_current_content_overrides_disk(tmp_path: Path):
+    """When current_content is provided, the LLM receives it instead of the file on disk."""
+    from lean_agent.commands.edit_persona import draft_persona_change
+    from lean_agent.llm import StubLLMClient
+
+    root = _make_personas_root(tmp_path)
+
+    # The file on disk has "alice" but we pass a custom current_content
+    custom_content = PERSONA_OK.replace("Story.", "Custom story from prior draft.")
+    client = StubLLMClient(streaming_responses=[[PERSONA_OK]])
+
+    list(draft_persona_change(
+        target_id="alice",
+        instruction="tweak further",
+        client=client,
+        personas_root=root,
+        current_content=custom_content,
+    ))
+
+    # The user-message sent to LLM should contain our custom content, not the disk file
+    sent_msg = client.streaming_calls[0].messages[0]["content"]
+    assert "Custom story from prior draft." in sent_msg
+    assert "Story." not in sent_msg  # disk content NOT used
+
+
+def test_draft_persona_change_current_content_in_create_mode(tmp_path: Path):
+    """In create-mode with current_content, template is bypassed."""
+    from lean_agent.commands.edit_persona import draft_persona_change
+    from lean_agent.llm import StubLLMClient
+
+    root = _make_personas_root(tmp_path)
+
+    custom = PERSONA_OK.replace("alice", "bob").replace("Alice", "Bob")
+    client = StubLLMClient(streaming_responses=[[PERSONA_OK]])
+
+    list(draft_persona_change(
+        target_id=None,
+        instruction="refine this draft",
+        client=client,
+        personas_root=root,
+        current_content=custom,
+    ))
+
+    sent_msg = client.streaming_calls[0].messages[0]["content"]
+    assert "Bob" in sent_msg  # custom content used
+    # Template content (empty sections) should NOT be present
+    assert "New Persona" not in sent_msg
