@@ -38,3 +38,38 @@ def commit_all(path: Path, message: str) -> str | None:
         return None
     commit = repo.index.commit(message, author=_LEAN_AGENT_ACTOR, committer=_LEAN_AGENT_ACTOR)
     return commit.hexsha
+
+
+def file_history(repo_root: Path, rel_path: str, max_entries: int = 50) -> list[dict[str, str]]:
+    """Return git log for a single file as a list of {sha, message, date}.
+
+    Returns an empty list if the repo doesn't exist or the file has no commits.
+    """
+    if not has_repo(repo_root):
+        return []
+    repo = Repo(repo_root)
+    if not repo.head.is_valid():
+        return []
+    try:
+        commits = list(repo.iter_commits(paths=rel_path, max_count=max_entries))
+    except Exception:
+        return []
+    return [
+        {
+            "sha": c.hexsha[:8],
+            "message": c.message.strip() if isinstance(c.message, str) else str(c.message).strip(),
+            "date": c.committed_datetime.isoformat(),
+        }
+        for c in commits
+    ]
+
+
+def file_at_revision(repo_root: Path, rel_path: str, sha: str) -> str | None:
+    """Return file content at a specific git revision. Returns None if not found."""
+    if not has_repo(repo_root):
+        return None
+    repo = Repo(repo_root)
+    try:
+        return repo.git.show(f"{sha}:{rel_path}")
+    except Exception:
+        return None

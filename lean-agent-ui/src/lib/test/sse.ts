@@ -1,5 +1,5 @@
 export type SseEvent = {
-  event: "token" | "done" | "error";
+  event: "token" | "done" | "error" | "phase" | "plan_ready" | "persona_created";
   data: unknown;
 };
 

@@ -102,3 +102,86 @@ def test_preset_draft_streams_sse(client_with_tmp_home):
     data = json.loads(done_line[len("data: "):])
     assert data["ok"] is True
     assert "carol" in data["content"]
+
+
+# ----- v0.3.2 auto-gen tests -----
+
+
+def _parse_sse_events(raw: str) -> list[tuple[str, dict]]:
+    """Parse raw SSE text into a list of (event_name, data_dict) tuples."""
+    events = []
+    event_name = None
+    for line in raw.split("\n"):
+        if line.startswith("event: "):
+            event_name = line[len("event: "):]
+        elif line.startswith("data: ") and event_name is not None:
+            events.append((event_name, json.loads(line[len("data: "):])))
+            event_name = None
+    return events
+
+
+def test_auto_gen_returns_plan_ready(client_with_tmp_home):
+    client, stub, _ = client_with_tmp_home
+    plan = {
+        "description": "SMB SaaS founders panel",
+        "reuse": ["alice"],
+        "create": [{"slug": "dave", "name": "Dave", "description": "A CTO persona"}],
+    }
+    stub.responses.append(json.dumps(plan))
+
+    with client.stream("POST", "/api/panel-presets/auto-gen",
+                       json={"instruction": "build a SMB SaaS panel"}) as r:
+        assert r.status_code == 200
+        body = b"".join(r.iter_bytes()).decode()
+
+    events = _parse_sse_events(body)
+    event_names = [e[0] for e in events]
+    assert "phase" in event_names
+    assert "plan_ready" in event_names
+    plan_data = next(d for n, d in events if n == "plan_ready")
+    assert plan_data["plan"]["reuse"] == ["alice"]
+    assert plan_data["plan"]["create"][0]["slug"] == "dave"
+
+
+def test_auto_gen_llm_failure_returns_done_ok_false(client_with_tmp_home):
+    client, stub, _ = client_with_tmp_home
+    stub.responses.append("not valid json {{{")
+
+    with client.stream("POST", "/api/panel-presets/auto-gen",
+                       json={"instruction": "whatever"}) as r:
+        body = b"".join(r.iter_bytes()).decode()
+
+    events = _parse_sse_events(body)
+    done_events = [(n, d) for n, d in events if n == "done"]
+    assert len(done_events) == 1
+    assert done_events[0][1]["ok"] is False
+    assert done_events[0][1]["errors"]
+
+
+def test_auto_gen_confirm_streams_persona_created_and_done(client_with_tmp_home):
+    client, stub, tmp_path = client_with_tmp_home
+    # Stub the LLM response for persona generation (one persona to create)
+    stub.responses.append(PERSONA_OK.format(pid="dave"))
+
+    plan = {
+        "description": "Test panel",
+        "reuse": ["alice"],
+        "create": [{"slug": "dave", "name": "Dave", "description": "A CTO persona"}],
+    }
+
+    with client.stream("POST", "/api/panel-presets/auto-gen/confirm",
+                       json={"plan": plan}) as r:
+        assert r.status_code == 200
+        body = b"".join(r.iter_bytes()).decode()
+
+    events = _parse_sse_events(body)
+    event_names = [e[0] for e in events]
+    assert "persona_created" in event_names
+    assert "done" in event_names
+    created = next(d for n, d in events if n == "persona_created")
+    assert created["slug"] == "dave"
+    done = next(d for n, d in events if n == "done")
+    assert done["ok"] is True
+    assert "content" in done
+    # Verify persona file was written to disk
+    assert (tmp_path / "personas" / "dave.md").exists()

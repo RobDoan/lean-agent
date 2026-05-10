@@ -200,3 +200,126 @@ describe("useDraftStream iterative refinement (v0.3.1)", () => {
     );
   });
 });
+
+
+describe("useDraftStream auto-gen flow (v0.3.2)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("sendAutoGen posts to /api/panel-presets/auto-gen with instruction", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([
+        { event: "phase", data: { phase: "analyzing" } },
+        { event: "plan_ready", data: { plan: { description: "test", reuse: [], create: [] } } },
+      ]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("preset", null));
+    act(() => result.current.sendAutoGen("low-income gig workers"));
+
+    await waitFor(() => expect(result.current.state).toBe("plan_ready"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/panel-presets/auto-gen",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ instruction: "low-income gig workers" }),
+      }),
+    );
+  });
+
+  it("phase:analyzing transitions state to analyzing", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([
+        { event: "phase", data: { phase: "analyzing" } },
+        { event: "plan_ready", data: { plan: { description: "d", reuse: [], create: [] } } },
+      ]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("preset", null));
+    act(() => result.current.sendAutoGen("x"));
+
+    await waitFor(() => expect(result.current.state).toBe("plan_ready"));
+    expect(result.current.plan).toEqual({ description: "d", reuse: [], create: [] });
+  });
+
+  it("plan_ready stores plan and transitions to plan_ready", async () => {
+    const plan = {
+      description: "Panel for gig workers",
+      reuse: ["sarah-freelance-designer"],
+      create: [{ slug: "maria-gig", name: "Maria", description: "gig worker" }],
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([
+        { event: "phase", data: { phase: "analyzing" } },
+        { event: "plan_ready", data: { plan } },
+      ]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("preset", null));
+    act(() => result.current.sendAutoGen("gig workers"));
+
+    await waitFor(() => expect(result.current.state).toBe("plan_ready"));
+    expect(result.current.plan).toEqual(plan);
+  });
+
+  it("confirmPlan posts to /api/panel-presets/auto-gen/confirm with plan", async () => {
+    const plan = { description: "d", reuse: ["alice"], create: [{ slug: "bob", name: "Bob", description: "x" }] };
+
+    // First call: auto-gen returns plan_ready
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        mockSseResponse([
+          { event: "phase", data: { phase: "analyzing" } },
+          { event: "plan_ready", data: { plan } },
+        ]),
+      )
+      // Second call: confirm returns done
+      .mockResolvedValueOnce(
+        mockSseResponse([
+          { event: "phase", data: { phase: "generating_persona" } },
+          { event: "persona_created", data: { slug: "bob", name: "Bob" } },
+          { event: "phase", data: { phase: "composing" } },
+          { event: "done", data: { ok: true, content: "> d\n\n- alice\n- bob\n" } },
+        ]),
+      );
+
+    const { result } = renderHook(() => useDraftStream("preset", null));
+    act(() => result.current.sendAutoGen("x"));
+    await waitFor(() => expect(result.current.state).toBe("plan_ready"));
+
+    act(() => result.current.confirmPlan());
+    await waitFor(() => expect(result.current.state).toBe("done_ok"));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/panel-presets/auto-gen/confirm",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ plan }),
+      }),
+    );
+    expect(result.current.proposedText).toBe("> d\n\n- alice\n- bob\n");
+    expect(result.current.createdPersonas).toEqual([{ slug: "bob", name: "Bob" }]);
+  });
+
+  it("reset clears plan and createdPersonas", async () => {
+    const plan = { description: "d", reuse: [], create: [] };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      mockSseResponse([
+        { event: "plan_ready", data: { plan } },
+      ]),
+    );
+
+    const { result } = renderHook(() => useDraftStream("preset", null));
+    act(() => result.current.sendAutoGen("x"));
+    await waitFor(() => expect(result.current.state).toBe("plan_ready"));
+
+    act(() => result.current.reset());
+    expect(result.current.state).toBe("idle");
+    expect(result.current.plan).toBeNull();
+    expect(result.current.createdPersonas).toEqual([]);
+  });
+});

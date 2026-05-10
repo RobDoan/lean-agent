@@ -76,3 +76,28 @@ export type PresetDetail = {
   persona_ids: string[];
   raw_content: string;
 };
+
+// v0.3.2 — preset auto-generation
+export type PresetPlanPersona = {
+  slug: string;
+  name: string;
+  description: string;
+};
+
+export type PresetPlan = {
+  description: string;
+  reuse: string[];
+  create: PresetPlanPersona[];
+};
+
+// v0.3.2 -- preset history
+export type PresetHistoryEntry = {
+  sha: string;
+  message: string;
+  date: string;
+};
+
+export type PresetVersionContent = {
+  sha: string;
+  content: string;
+};

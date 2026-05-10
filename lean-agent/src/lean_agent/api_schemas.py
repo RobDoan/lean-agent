@@ -115,3 +115,40 @@ class PresetCreateRequest(BaseModel):
 
 class PresetEditRequest(BaseModel):
     content: str = Field(min_length=1, max_length=10000)
+
+
+# ----- v0.3.2 preset auto-generation schemas -----
+
+
+class PresetAutoGenRequest(BaseModel):
+    instruction: str = Field(min_length=1, max_length=2000)
+
+
+class PresetPlanPersona(BaseModel):
+    slug: str
+    name: str
+    description: str
+
+
+class PresetPlan(BaseModel):
+    description: str
+    reuse: list[str]
+    create: list[PresetPlanPersona]
+
+
+class PresetConfirmRequest(BaseModel):
+    plan: PresetPlan
+
+
+# ----- v0.3.2 preset history schemas -----
+
+
+class PresetHistoryEntry(BaseModel):
+    sha: str
+    message: str
+    date: str
+
+
+class PresetVersionContent(BaseModel):
+    sha: str
+    content: str

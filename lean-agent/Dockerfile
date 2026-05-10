@@ -1,8 +1,8 @@
 # v0.2.0 backend service. Mac + Linux only (per design §9).
 FROM python:3.12-slim
 
-# curl for healthcheck; uv for dependency resolution.
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# curl for healthcheck; git for gitpython (version history); uv for dependency resolution.
+RUN apt-get update && apt-get install -y --no-install-recommends curl git \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 

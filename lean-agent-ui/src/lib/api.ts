@@ -4,7 +4,9 @@ import type {
   PersonaDetail,
   PersonaSummary,
   PresetDetail,
+  PresetHistoryEntry,
   PresetSummary,
+  PresetVersionContent,
   ProjectDetail,
   ProjectSummary,
 } from "@/lib/types";
@@ -131,4 +133,14 @@ export function editPreset(name: string, content: string): Promise<PresetDetail>
 
 export function deletePreset(name: string): Promise<void> {
   return del(`/api/panel-presets/${name}`);
+}
+
+// v0.3.2 -- preset history
+
+export function getPresetHistory(name: string): Promise<PresetHistoryEntry[]> {
+  return getJson<PresetHistoryEntry[]>(`/api/panel-presets/${name}/history`);
+}
+
+export function getPresetVersion(name: string, sha: string): Promise<PresetVersionContent> {
+  return getJson<PresetVersionContent>(`/api/panel-presets/${name}/history/${sha}`);
 }
