@@ -1,5 +1,4 @@
 ---
-id: alex-engineering-manager
 name: Alex Tanaka
 age: 38
 role: Engineering Manager, mid-size fintech

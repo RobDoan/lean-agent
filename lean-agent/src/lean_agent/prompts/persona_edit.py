@@ -10,7 +10,7 @@ SYSTEM_PROMPT = """\
 You are editing a persona file for the lean-agent tool. A persona file is a
 markdown document with strict structure:
 
-  - YAML-style frontmatter delimited by `---`, containing at least: id, name.
+  - YAML-style frontmatter delimited by `---`, containing at least: name.
     Other recommended fields: age, role, income, location.
   - Exactly four sections, each beginning with `##` and these EXACT headings:
       ## Backstory
@@ -23,7 +23,7 @@ return the new file in full.
 
 Rules:
   - Output ONLY the file content. No explanation, no preamble, no code fences.
-  - Preserve the `id` field exactly. Renaming is not supported.
+  - Do NOT include an `id` field in the frontmatter. The persona's identity comes from the filename.
   - Keep all four section headings, even if a section is short.
   - Match the existing tone and style unless the instruction says otherwise.
   - Beliefs and Biases use bullet points (`-`); Backstory and "How she answers

@@ -1,5 +1,4 @@
 ---
-id: priya-marketing-lead
 name: Priya Krishnan
 age: 36
 role: Head of Growth, B2B SaaS (50-person)

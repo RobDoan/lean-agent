@@ -48,9 +48,9 @@ def _read_template() -> str:
     return (files("lean_agent.personas") / "_template_persona.md").read_text(encoding="utf-8")
 
 
-def _validate_content(content: str) -> Persona:
+def _validate_content(content: str, *, slug: str) -> Persona:
     try:
-        return load_persona_from_str(content)
+        return load_persona_from_str(content, slug=slug)
     except (ValueError, KeyError) as e:
         raise LLMOutputInvalid([str(e)])
 
@@ -93,7 +93,7 @@ def draft_persona_change(
 
     full = _strip_outer_fence("".join(buf))
     try:
-        _validate_content(full)
+        _validate_content(full, slug=target_id or "draft")
         yield {"kind": "done", "ok": True, "content": full}
     except LLMOutputInvalid as e:
         yield {"kind": "done", "ok": False, "content": full, "errors": e.errors}
@@ -105,11 +105,7 @@ def commit_persona_create(
     path = _persona_path(personas_root, persona_id)
     if path.exists():
         raise PersonaIdConflict(persona_id)
-    persona = _validate_content(content)
-    if persona.id != persona_id:
-        raise LLMOutputInvalid(
-            [f"id mismatch: URL id is {persona_id!r} but content frontmatter id is {persona.id!r}"]
-        )
+    persona = _validate_content(content, slug=persona_id)
     atomic_write_text(path, content)
     return persona
 
@@ -120,11 +116,7 @@ def commit_persona_edit(
     path = _persona_path(personas_root, persona_id)
     if not path.exists():
         raise PersonaNotFound(persona_id)
-    persona = _validate_content(content)
-    if persona.id != persona_id:
-        raise LLMOutputInvalid(
-            [f"id mismatch: URL id is {persona_id!r} but content frontmatter id is {persona.id!r}"]
-        )
+    persona = _validate_content(content, slug=persona_id)
     atomic_write_text(path, content)
     return persona
 

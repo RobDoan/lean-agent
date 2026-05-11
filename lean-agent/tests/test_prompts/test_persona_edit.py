@@ -8,8 +8,8 @@ def test_system_prompt_locks_required_format_rules():
     assert "## How she answers questions" in SYSTEM_PROMPT
     # No code fences in output
     assert "no code fences" in SYSTEM_PROMPT.lower()
-    # Preserve id
-    assert "Preserve the `id`" in SYSTEM_PROMPT
+    # Do not include id field
+    assert "Do NOT include an `id` field" in SYSTEM_PROMPT
 
 
 def test_build_user_message_wraps_current_and_instruction():

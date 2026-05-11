@@ -27,21 +27,11 @@ from lean_agent.prompts.preset_gap_analysis import (
 
 
 _FENCE_OUTER = re.compile(r"^```[a-z]*\n(.*)\n```\s*$", re.DOTALL)
-_FM_ID_LINE = re.compile(r"^id:\s*\S+", re.MULTILINE)
 
 
 def _strip_outer_fence(text: str) -> str:
     m = _FENCE_OUTER.match(text.strip())
     return m.group(1) if m else text
-
-
-def _force_frontmatter_id(content: str, slug: str) -> str:
-    """Replace the ``id: ...`` line in YAML frontmatter with the desired slug.
-
-    Ensures the generated persona file's id always matches the planned slug,
-    regardless of what the LLM produced.
-    """
-    return _FM_ID_LINE.sub(f"id: {slug}", content, count=1)
 
 
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
@@ -298,15 +288,12 @@ def execute_preset_plan(
                 "persona_slug": slug,
             }
 
-            # Replace the template id with the planned slug so the LLM starts
-            # from the right id, and explicitly tell it to use this slug.
-            seeded_template = template.replace("id: new-persona", f"id: {slug}")
             instruction = (
-                f"Create a persona with id '{slug}'. {entry['description']}"
+                f"Create a persona named '{slug}'. {entry['description']}"
             )
 
             user_msg = build_persona_user_message(
-                current_content=seeded_template,
+                current_content=template,
                 instruction=instruction,
             )
             req = LLMRequest(
@@ -316,11 +303,7 @@ def execute_preset_plan(
             resp = client.complete(req)
             content = _strip_outer_fence(resp.text)
 
-            # Ensure the id in frontmatter matches the planned slug.
-            # The LLM may have drifted — force-replace the id line.
-            content = _force_frontmatter_id(content, slug)
-
-            persona = load_persona_from_str(content)
+            persona = load_persona_from_str(content, slug=slug)
             atomic_write_persona(personas_root / f"{slug}.md", content)
             created_slugs.append(slug)
             yield {"kind": "persona_created", "slug": slug, "name": persona.name}

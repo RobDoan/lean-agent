@@ -1,5 +1,4 @@
 ---
-id: sarah-freelance-designer
 name: Sarah Chen
 age: 34
 role: Freelance graphic designer

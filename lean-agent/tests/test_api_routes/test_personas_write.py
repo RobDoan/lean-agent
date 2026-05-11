@@ -83,14 +83,6 @@ def test_put_persona_edit(client_with_tmp_home):
     assert "Tested" in (tmp_path / "personas" / "alice.md").read_text()
 
 
-def test_put_persona_rejects_id_mismatch(client_with_tmp_home):
-    client, _, _ = client_with_tmp_home
-    bad = PERSONA_OK.replace("id: alice", "id: bob")
-    r = client.put("/api/personas/alice", json={"content": bad})
-    assert r.status_code == 422
-    assert "errors" in r.json()
-
-
 def test_delete_persona(client_with_tmp_home):
     client, _, tmp_path = client_with_tmp_home
     r = client.delete("/api/personas/alice")

@@ -4,7 +4,6 @@ import pytest
 
 
 PERSONA_OK = """---
-id: alice
 name: Alice
 role: Tester
 ---
@@ -173,19 +172,6 @@ def test_commit_persona_create_rejects_invalid_content(tmp_path: Path):
         commit_persona_create(persona_id="alice", content="garbage", personas_root=root)
 
 
-def test_commit_persona_create_rejects_id_mismatch(tmp_path: Path):
-    """Frontmatter id must match URL id — no covert id substitution via POST."""
-    from lean_agent.commands.edit_persona import commit_persona_create
-    from lean_agent.commands.errors import LLMOutputInvalid
-
-    root = tmp_path / "personas"
-    root.mkdir()
-    bad_content = PERSONA_OK.replace("id: alice", "id: bob")
-
-    with pytest.raises(LLMOutputInvalid, match="id mismatch"):
-        commit_persona_create(persona_id="alice", content=bad_content, personas_root=root)
-
-
 # --- commit_persona_edit ---
 
 def test_commit_persona_edit_replaces_file(tmp_path: Path):
@@ -198,18 +184,6 @@ def test_commit_persona_edit_replaces_file(tmp_path: Path):
 
     assert "Indirect." in (root / "alice.md").read_text()
     assert persona.id == "alice"
-
-
-def test_commit_persona_edit_rejects_id_mismatch(tmp_path: Path):
-    """Frontmatter id must match URL id — no covert rename via PUT."""
-    from lean_agent.commands.edit_persona import commit_persona_edit
-    from lean_agent.commands.errors import LLMOutputInvalid
-
-    root = _make_personas_root(tmp_path)
-    bad_content = PERSONA_OK.replace("id: alice", "id: bob")
-
-    with pytest.raises(LLMOutputInvalid, match="id mismatch"):
-        commit_persona_edit(persona_id="alice", content=bad_content, personas_root=root)
 
 
 def test_commit_persona_edit_rejects_missing_target(tmp_path: Path):
@@ -314,5 +288,5 @@ def test_draft_persona_change_current_content_in_create_mode(tmp_path: Path):
 
     sent_msg = client.streaming_calls[0].messages[0]["content"]
     assert "Bob" in sent_msg  # custom content used
-    # Template content (empty sections) should NOT be present
-    assert "New Persona" not in sent_msg
+    # Template's empty name field should NOT be present (custom content overrides template)
+    assert "name: \n" not in sent_msg

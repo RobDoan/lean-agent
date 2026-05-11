@@ -5,7 +5,6 @@ import pytest
 
 
 PERSONA_OK = """---
-id: alice
 name: Alice
 ---
 
@@ -24,7 +23,8 @@ def _make_personas(tmp_path: Path, ids: list[str]) -> tuple[Path, Path]:
     root = tmp_path / "personas"
     root.mkdir()
     for pid in ids:
-        (root / f"{pid}.md").write_text(PERSONA_OK.replace("alice", pid))
+        content = f"---\nname: {pid}\n---\n\n## Backstory\nx\n## Beliefs\nx\n## Biases\nx\n## How she answers questions\nx\n"
+        (root / f"{pid}.md").write_text(content)
     presets_root = root / "_panel-presets"
     presets_root.mkdir()
     return root, presets_root
@@ -322,7 +322,7 @@ def test_analyze_preset_gaps_invalid_json(tmp_path: Path):
 
 def _persona_md(slug: str, name: str) -> str:
     return (
-        f"---\nid: {slug}\nname: {name}\n---\n\n"
+        f"---\nname: {name}\n---\n\n"
         "## Backstory\nx\n"
         "## Beliefs\nx\n"
         "## Biases\nx\n"
@@ -448,26 +448,3 @@ def test_execute_preset_plan_content_format(tmp_path: Path):
     assert lines[2] == "- alice"
     assert lines[3] == "- bob"
     assert lines[4] == "- carol-cto"
-
-
-# --- _force_frontmatter_id (v0.3.2 bug fix) ---
-
-
-def test_force_frontmatter_id_replaces_id_in_frontmatter():
-    from lean_agent.commands.edit_preset import _force_frontmatter_id
-
-    content = "---\nid: new-persona\nname: Maria\n---\n\n## Backstory\nx\n"
-    result = _force_frontmatter_id(content, "maria-gig-delivery")
-    assert "id: maria-gig-delivery" in result
-    assert "id: new-persona" not in result
-    # Preserves the rest
-    assert "name: Maria" in result
-
-
-def test_force_frontmatter_id_replaces_llm_drifted_id():
-    from lean_agent.commands.edit_preset import _force_frontmatter_id
-
-    content = "---\nid: some-other-id\nname: Carlos\n---\n\n## Backstory\nx\n"
-    result = _force_frontmatter_id(content, "carlos-rideshare")
-    assert "id: carlos-rideshare" in result
-    assert "id: some-other-id" not in result

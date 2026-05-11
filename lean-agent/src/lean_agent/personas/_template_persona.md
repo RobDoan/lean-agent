@@ -1,7 +1,6 @@
 ---
-id: new-persona
-name: New Persona
-age: 30
+name: 
+age: 
 role: 
 income: 
 location: 

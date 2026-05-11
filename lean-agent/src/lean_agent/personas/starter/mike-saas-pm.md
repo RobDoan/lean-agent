@@ -1,5 +1,4 @@
 ---
-id: mike-saas-pm
 name: Mike Patel
 age: 41
 role: Senior PM at a 200-person SaaS company

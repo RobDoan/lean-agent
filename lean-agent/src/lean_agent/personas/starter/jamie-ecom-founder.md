@@ -1,5 +1,4 @@
 ---
-id: jamie-ecom-founder
 name: Jamie Rodriguez
 age: 29
 role: Solo founder, DTC home-goods brand

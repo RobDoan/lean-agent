@@ -27,13 +27,34 @@ Two years freelance.
 - Story-driven.
 """
 
+SAMPLE_NO_ID = """---
+name: Sarah Test
+age: 34
+role: Freelance designer
+income: $80k/year
+location: Portland, OR
+---
+
+## Backstory
+Two years freelance.
+
+## Beliefs
+- Time is scarce.
+
+## Biases
+- Lies about checking invoices weekly.
+
+## How she answers questions
+- Story-driven.
+"""
+
 
 def test_load_persona(tmp_path: Path):
     p = tmp_path / "sarah-test.md"
     p.write_text(SAMPLE)
     persona = load_persona(p)
     assert isinstance(persona, Persona)
-    assert persona.id == "sarah-test"
+    assert persona.id == "sarah-test"  # from filename, not frontmatter
     assert persona.name == "Sarah Test"
     assert persona.metadata["role"] == "Freelance designer"
     assert "Story-driven" in persona.how_she_answers
@@ -51,7 +72,7 @@ def test_load_all_skips_underscore_files(tmp_path: Path):
     (tmp_path / "_killed-ideas.md").write_text("# notes\n")
     (tmp_path / "_panel-presets").mkdir()
     out = load_all(tmp_path)
-    assert [p.id for p in out] == ["sarah-test"]
+    assert [p.id for p in out] == ["real"]  # id from filename
 
 
 def test_starter_personas_all_load():
@@ -105,7 +126,7 @@ def test_load_persona_handles_crlf_and_bom(tmp_path: Path):
     p.write_bytes(b"\xef\xbb\xbf" + crlf.encode("utf-8"))  # UTF-8 BOM + CRLF
 
     persona = load_persona(p)
-    assert persona.id == "windows-sarah"
+    assert persona.id == "windows-sarah"  # from filename
     assert persona.name == "Sarah Windows"
     assert "Saved on Windows." in persona.backstory
 
@@ -114,7 +135,6 @@ def test_load_persona_from_str_parses_valid_content():
     from lean_agent.personas.loader import load_persona_from_str
 
     text = """---
-id: test-id
 name: Test Person
 role: Tester
 ---
@@ -131,7 +151,7 @@ Some backstory.
 ## How she answers questions
 Direct.
 """
-    persona = load_persona_from_str(text)
+    persona = load_persona_from_str(text, slug="test-id")
 
     assert persona.id == "test-id"
     assert persona.name == "Test Person"
@@ -145,14 +165,14 @@ def test_load_persona_from_str_raises_on_missing_frontmatter():
     from lean_agent.personas.loader import load_persona_from_str
 
     with pytest.raises(ValueError, match="frontmatter"):
-        load_persona_from_str("no frontmatter here")
+        load_persona_from_str("no frontmatter here", slug="x")
 
 
-def test_load_persona_from_str_raises_on_missing_id():
-    from lean_agent.personas.loader import load_persona_from_str
-
+def test_load_persona_tolerates_orphan_id_in_frontmatter(tmp_path: Path):
+    """Files with an old-style id: field still load; identity comes from filename."""
     text = """---
-name: No Id
+id: old-stale-id
+name: Alice
 ---
 
 ## Backstory
@@ -167,5 +187,43 @@ x
 ## How she answers questions
 x
 """
-    with pytest.raises(KeyError):
-        load_persona_from_str(text)
+    p = tmp_path / "alice-new.md"
+    p.write_text(text)
+    persona = load_persona(p)
+    assert persona.id == "alice-new"  # from filename, not frontmatter
+    assert persona.metadata.get("id") == "old-stale-id"  # still in metadata dict
+
+
+def test_load_persona_works_without_id_in_frontmatter(tmp_path: Path):
+    """Persona files without id: in frontmatter load correctly."""
+    p = tmp_path / "bob-eng.md"
+    p.write_text(SAMPLE_NO_ID.replace("Sarah Test", "Bob Eng"))
+    persona = load_persona(p)
+    assert persona.id == "bob-eng"
+    assert persona.name == "Bob Eng"
+
+
+def test_load_persona_from_str_ignores_frontmatter_id():
+    """load_persona_from_str uses slug param, ignores any frontmatter id."""
+    from lean_agent.personas.loader import load_persona_from_str
+
+    text = """---
+id: wrong-id
+name: Charlie
+---
+
+## Backstory
+x
+
+## Beliefs
+x
+
+## Biases
+x
+
+## How she answers questions
+x
+"""
+    persona = load_persona_from_str(text, slug="correct-slug")
+    assert persona.id == "correct-slug"
+    assert persona.name == "Charlie"

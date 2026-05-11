@@ -41,14 +41,14 @@ def _section(body: str, heading: str) -> str:
     return m.group(1).strip() if m else ""
 
 
-def _build_persona(text: str, raw_path: Path | None) -> Persona:
+def _build_persona(text: str, *, slug: str, raw_path: Path | None) -> Persona:
     # Normalise Windows CRLF endings to LF so the frontmatter regex
     # (which expects "\n") matches consistently across platforms.
     text = text.replace("\r\n", "\n")
     meta, body = _parse_frontmatter(text)
     return Persona(
-        id=meta["id"],
-        name=meta.get("name", meta["id"]),
+        id=slug,
+        name=meta.get("name", slug),
         metadata=meta,
         backstory=_section(body, "Backstory"),
         beliefs=_section(body, "Beliefs"),
@@ -61,12 +61,15 @@ def _build_persona(text: str, raw_path: Path | None) -> Persona:
 def load_persona(path: Path) -> Persona:
     # utf-8-sig strips a BOM if present; _build_persona normalises CRLF endings.
     text = path.read_text(encoding="utf-8-sig")
-    return _build_persona(text, raw_path=path)
+    return _build_persona(text, slug=path.stem, raw_path=path)
 
 
-def load_persona_from_str(text: str) -> Persona:
-    """Parse persona content from a string (e.g. LLM output) without disk I/O."""
-    return _build_persona(text, raw_path=None)
+def load_persona_from_str(text: str, *, slug: str) -> Persona:
+    """Parse persona content from a string (e.g. LLM output) without disk I/O.
+
+    The caller must supply ``slug`` explicitly — it becomes the persona's ``id``.
+    """
+    return _build_persona(text, slug=slug, raw_path=None)
 
 
 def load_all(root: Path) -> list[Persona]:
